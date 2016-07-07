@@ -57,7 +57,7 @@ class CharRNN(object):
       cell_fn = tf.nn.rnn_cell.GRUCell
 
     # params = {'input_size': self.input_size}
-    params = {'state_is_tuple': False}
+    params = {'state_is_tuple': True}
     if self.model == 'lstm':
       # add bias to forget gate in lstm.
       params['forget_bias'] = 0.0
@@ -79,15 +79,11 @@ class CharRNN(object):
                                              output_keep_prob=1.0-self.dropout)
                for cell in cells]
         
-    multi_cell = tf.nn.rnn_cell.MultiRNNCell(cells)
+    multi_cell = tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
 
     with tf.name_scope('initial_state'):
-      # zero_state is used to compute the intial state for cell.
-      self.zero_state = multi_cell.zero_state(self.batch_size, tf.float32)
       # Placeholder to feed in initial state.
-      self.initial_state = tf.placeholder(tf.float32,
-                                          [self.batch_size, multi_cell.state_size],
-                                          'initial_state')
+      self.initial_state = multi_cell.zero_state(self.batch_size, tf.float32)
 
     # Embeddings layers.
     with tf.name_scope('embedding_layer'):
@@ -197,7 +193,10 @@ class CharRNN(object):
 
     # Prepare initial state and reset the average loss
     # computation.
-    state = self.zero_state.eval()
+    state = []
+    for c, m in self.initial_state: # initial_state: ((c1, m1), (c2, m2))
+      state.append((c.eval(), m.eval()))
+
     self.reset_loss_monitor.run()
     start_time = time.time()
     for step in range(epoch_size):
@@ -206,15 +205,21 @@ class CharRNN(object):
       inputs = np.array(data[:-1]).transpose()
       targets = np.array(data[1:]).transpose()
 
-      ops = [self.average_loss, self.final_state, extra_op,
+      ops = [self.average_loss, extra_op,
              self.summaries, self.global_step, self.learning_rate]
+      for c, m in self.final_state: # final_state: ((c1, m1), (c2, m2))
+        ops.append(c)
+        ops.append(m)
 
-      feed_dict = {self.input_data: inputs, self.targets: targets,
-                   self.initial_state: state}
+      feed_dict = {self.input_data: inputs, self.targets: targets}
 
+      for i, (c, m) in enumerate(self.initial_state):
+        feed_dict[c], feed_dict[m] = state[i]
+  
       results = session.run(ops, feed_dict)
-      average_loss, state, _, summary_str, global_step, lr = results
-      
+      average_loss, _, summary_str, global_step, lr = results[:5]
+      state_flat = results[5:]
+      state = [state_flat[i:i+2] for i in range(0, len(state_flat), 2)]
       ppl = np.exp(average_loss)
       if (verbose > 0) and ((step+1) % freq == 0):
         logging.info("%.1f%%, step:%d, perplexity: %.3f, speed: %.0f words",
@@ -230,7 +235,9 @@ class CharRNN(object):
   def sample_seq(self, session, length, start_text, vocab_index_dict,
                  index_vocab_dict, temperature=1.0, max_prob=True):
 
-    state = self.zero_state.eval()
+    state = []
+    for c, m in self.initial_state: # initial_state: ((c1, m1), (c2, m2))
+      state.append((c.eval(), m.eval()))
 
     # use start_text to warm up the RNN.
     if start_text is not None and len(start_text) > 0:
