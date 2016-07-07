@@ -171,7 +171,22 @@ class CharRNN(object):
 
       self.train_op = optimizer.apply_gradients(zip(grads, tvars),
                                                 global_step=self.global_step)
-      
+
+  def add_states_to_list(self, l, state):
+    """ Adds the state tuples to the a list """
+    for c, m in state:
+      l.append(c)
+      l.append(m)
+
+  def add_states_to_dict(self, d, state):
+    """ Adds the state tuples to a dict """
+    for i, (c, m) in enumerate(self.initial_state):
+      d[c], d[m] = state[i]
+
+  def inflate_state(self, state_flat):
+    """ Convert a flattened list of states to a list tuples """
+    return [state_flat[i:i+2] for i in range(0, len(state_flat), 2)]
+
   def run_epoch(self, session, data_size, batch_generator, is_training,
                 verbose=0, freq=10, summary_writer=None, debug=False):
     """Runs the model on the given data for one full pass."""
@@ -207,19 +222,14 @@ class CharRNN(object):
 
       ops = [self.average_loss, extra_op,
              self.summaries, self.global_step, self.learning_rate]
-      for c, m in self.final_state: # final_state: ((c1, m1), (c2, m2))
-        ops.append(c)
-        ops.append(m)
+      self.add_states_to_list(ops, self.final_state)
 
       feed_dict = {self.input_data: inputs, self.targets: targets}
-
-      for i, (c, m) in enumerate(self.initial_state):
-        feed_dict[c], feed_dict[m] = state[i]
+      self.add_states_to_dict(feed_dict, state)
   
       results = session.run(ops, feed_dict)
       average_loss, _, summary_str, global_step, lr = results[:5]
-      state_flat = results[5:]
-      state = [state_flat[i:i+2] for i in range(0, len(state_flat), 2)]
+      state = self.inflate_state(results[5:])
       ppl = np.exp(average_loss)
       if (verbose > 0) and ((step+1) % freq == 0):
         logging.info("%.1f%%, step:%d, perplexity: %.3f, speed: %.0f words",
@@ -244,9 +254,15 @@ class CharRNN(object):
       seq = list(start_text)
       for char in start_text[:-1]:
         x = np.array([[char2id(char, vocab_index_dict)]])
-        state = session.run(self.final_state,
-                            {self.input_data: x,
-                             self.initial_state: state})
+
+        ops = []
+        self.add_states_to_list(ops, self.final_state)
+
+        feed_dict = {self.input_data: x}
+        self.add_states_to_dict(feed_dict, state)
+
+        results = session.run(ops, feed_dict)
+        state = self.inflate_state(results)
       x = np.array([[char2id(start_text[-1], vocab_index_dict)]])
     else:
       vocab_size = len(vocab_index_dict.keys())
@@ -254,10 +270,15 @@ class CharRNN(object):
       seq = []
 
     for i in range(length):
-      state, logits = session.run([self.final_state,
-                                   self.logits],
-                                  {self.input_data: x,
-                                   self.initial_state: state})
+      ops = [self.logits]
+      self.add_states_to_list(ops, self.final_state)
+
+      feed_dict = {self.input_data: x}
+      self.add_states_to_dict(feed_dict, state)
+
+      results = session.run(ops, feed_dict)
+      logits = results[0]
+      state = self.inflate_state(results[1:])
       unnormalized_probs = np.exp((logits - np.max(logits)) / temperature)
       probs = unnormalized_probs / np.sum(unnormalized_probs)
 
@@ -270,7 +291,6 @@ class CharRNN(object):
       x = np.array([[sample]])
     return ''.join(seq)
       
-        
 class BatchGenerator(object):
     """Generate and hold batches."""
     def __init__(self, text, batch_size, n_unrollings, vocab_size,
