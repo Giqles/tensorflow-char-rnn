@@ -8,6 +8,7 @@ import sys
 
 import numpy as np
 from char_rnn_model import *
+from datetime import datetime
 
 TF_VERSION = int(tf.__version__.split('.')[1])
 
@@ -209,6 +210,8 @@ def main():
         logging.info('Vocabulary is saved in %s', vocab_file)
         args.vocab_file = vocab_file
 
+    status_file = os.path.join(args.output_dir, 'status.json')
+
     params['vocab_size'] = vocab_size
     logging.info('Vocab size: %d', vocab_size)
 
@@ -324,6 +327,7 @@ def main():
                     os.remove(result_path)
                 with open(result_path, 'w') as f:
                     json.dump(result, f, indent=2, sort_keys=True)
+                save_status(i, status_file, best_valid_ppl)
 
             logging.info('Latest model is saved in %s', saved_path)
             logging.info('Best model is saved in %s', best_model)
@@ -369,5 +373,13 @@ def save_vocab(vocab_index_dict, vocab_file, encoding):
     with codecs.open(vocab_file, 'w', encoding=encoding) as f:
         json.dump(vocab_index_dict, f, indent=2, sort_keys=True)
         
+def save_status(epoch, status_file, ppl):
+    status = {}
+    status["epoch"] = epoch
+    status["timestamp"] = str(datetime.now())
+    status["best_valid_ppl"] = "%.4f" % ppl
+    with codecs.open(status_file, 'w', encoding = 'ascii') as f:
+        json.dump(status, f, indent=2, sort_keys=True)
+
 if __name__ == '__main__':
     main()
