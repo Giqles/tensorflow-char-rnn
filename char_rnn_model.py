@@ -2,6 +2,7 @@ import logging
 import time
 import numpy as np
 import tensorflow as tf
+import copy
 
 # Disable Tensorflow logging messages.
 logging.getLogger('tensorflow').setLevel(logging.WARNING)
@@ -243,8 +244,7 @@ class CharRNN(object):
     return ppl, summary_str, global_step
 
   def sample_seq(self, session, length, start_text, vocab_index_dict,
-                 index_vocab_dict, temperature=1.0, max_prob=True):
-
+                 index_vocab_dict, temperature=1.0, max_prob=True, beam_size=1):
     state = []
     for c, m in self.initial_state: # initial_state: ((c1, m1), (c2, m2))
       state.append((c.eval(), m.eval()))
@@ -268,28 +268,55 @@ class CharRNN(object):
       vocab_size = len(vocab_index_dict.keys())
       x = np.array([[np.random.randint(0, vocab_size)]])
       seq = []
-
+    X = [x for i in xrange(beam_size)]
+    beam_states = [state for i in xrange(beam_size)]
+    beam_probs = [0 for i in xrange(beam_size)]
+    sequences = [copy.copy(seq) for i in xrange(beam_size)]
     for i in range(length):
-      ops = [self.logits]
-      self.add_states_to_list(ops, self.final_state)
+      samples = []
+      probs_list = np.zeros((beam_size, beam_size))
+      for j, state in enumerate(beam_states):
 
-      feed_dict = {self.input_data: x}
-      self.add_states_to_dict(feed_dict, state)
+        ops = [self.logits]
+        self.add_states_to_list(ops, self.final_state)
+        feed_dict = {self.input_data: X[j]}
+        self.add_states_to_dict(feed_dict, state)
 
-      results = session.run(ops, feed_dict)
-      logits = results[0]
-      state = self.inflate_state(results[1:])
-      unnormalized_probs = np.exp((logits - np.max(logits)) / temperature)
-      probs = unnormalized_probs / np.sum(unnormalized_probs)
-
-      if max_prob:
-        sample = np.argmax(probs[0])
+        results = session.run(ops, feed_dict)
+        logits = results[0]
+        state = self.inflate_state(results[1:])
+        beam_states[j] = state
+        unnormalized_probs = np.exp((logits - np.max(logits)) / temperature)
+        probs = unnormalized_probs / np.sum(unnormalized_probs)
+        if max_prob:
+          values, indices = tf.nn.top_k(probs[0], k=beam_size)
+        else:
+          indices = np.random.choice(self.vocab_size, size=beam_size, p=probs[0], replace=False)
+          values = probs[0][indices]
+        probs_list[j] = values
+        samples.append(indices)
+      new_beam_probs = (beam_probs +  np.log(probs_list).T).T
+      beam_probs, indices = tf.nn.top_k(new_beam_probs.ravel(), k=beam_size)
+      beam_probs = beam_probs.eval()
+      index_vals = []
+      if beam_size > 1:
+        index_vals = indices.eval()
       else:
-        sample = np.random.choice(self.vocab_size, 1, p=probs[0])[0]
-
-      seq.append(id2char(sample, index_vocab_dict))
-      x = np.array([[sample]])
-    return ''.join(seq)
+        index_vals = indices.eval()
+      old_seq = copy.deepcopy(sequences)
+      old_states = copy.deepcopy(beam_states)
+      for j, index in enumerate(index_vals):
+        n = index / beam_size
+        m = index % beam_size
+        sample = samples[n][m]
+        char = id2char(sample, index_vocab_dict)
+        sequences[j] = copy.copy(old_seq[n])
+        sequences[j].append(char)
+        beam_states[j] = old_states[n]
+        X[j] = [[sample]]
+#      for sequence in sequences:
+#        print ''.join(sequence)
+    return ''.join(sequences[np.argmax(beam_probs)])
       
 class BatchGenerator(object):
     """Generate and hold batches."""

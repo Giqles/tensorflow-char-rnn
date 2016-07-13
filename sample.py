@@ -34,6 +34,10 @@ def main():
                         default=100,
                         help='length of sampled sequence')
 
+    parser.add_argument('--beam', type=int,
+                        default=1,
+                        help='beam width')
+
     parser.add_argument('--seed', type=int,
                         default=-1,
                         help=('seed for sampling to replicate results, '
@@ -53,7 +57,6 @@ def main():
     parser.set_defaults(debug=False)
     
     args = parser.parse_args()
-
     # Prepare parameters.
     with open(os.path.join(args.init_dir, 'result.json'), 'r') as f:
         result = json.load(f)
@@ -94,7 +97,7 @@ def main():
             sample = test_model.sample_seq(session, args.length, args.start_text,
                                             vocab_index_dict, index_vocab_dict,
                                             temperature=args.temperature,
-                                            max_prob=args.max_prob)
+                                            max_prob=args.max_prob, beam_size=args.beam)
             print('Sampled text is:\n%s' % sample)
         return sample
 
