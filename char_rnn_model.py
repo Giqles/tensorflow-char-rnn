@@ -169,7 +169,7 @@ class CharRNN(object):
       # optimizer = tf.train.RMSPropOptimizer(learning_rate, decay_rate)
       optimizer = tf.train.AdamOptimizer(self.learning_rate)
 
-      self.train_op = optimizer.apply_gradients(zip(grads, tvars),
+      self.train_op = optimizer.apply_gradients(list(zip(grads, tvars)),
                                                 global_step=self.global_step)
 
   def add_states_to_list(self, l, state):
@@ -216,7 +216,7 @@ class CharRNN(object):
     start_time = time.time()
     for step in range(epoch_size):
       # Generate the batch and use [:-1] as inputs and [1:] as targets.
-      data = batch_generator.next()
+      data = next(batch_generator)
       inputs = np.array(data[:-1]).transpose()
       targets = np.array(data[1:]).transpose()
 
@@ -265,7 +265,7 @@ class CharRNN(object):
         state = self.inflate_state(results)
       x = np.array([[char2id(start_text[-1], vocab_index_dict)]])
     else:
-      vocab_size = len(vocab_index_dict.keys())
+      vocab_size = len(list(vocab_index_dict.keys()))
       x = np.array([[np.random.randint(0, vocab_size)]])
       seq = []
 
@@ -319,7 +319,7 @@ class BatchGenerator(object):
         self._cursor[b] = (self._cursor[b] + 1) % self._text_size
       return batch
 
-    def next(self):
+    def __next__(self):
       """Generate the next array of batches from the data. The array consists of
       the last batch of the previous array, followed by num_unrollings new ones.
       """

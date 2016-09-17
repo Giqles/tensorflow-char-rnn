@@ -143,10 +143,10 @@ def main():
                             level=logging.INFO,
                             datefmt='%I:%M:%S')
 
-    print('=' * 60)
-    print('All final and intermediate outputs will be stored in %s/' % args.output_dir)
-    print('All information will be logged to %s' % args.log_file)
-    print('=' * 60 + '\n')
+    print(('=' * 60))
+    print(('All final and intermediate outputs will be stored in %s/' % args.output_dir))
+    print(('All information will be logged to %s' % args.log_file))
+    print(('=' * 60 + '\n'))
 
     if args.debug:
         logging.info('args are:\n%s', args)
@@ -227,8 +227,8 @@ def main():
 
     if args.debug:
         logging.info('Test batch generators')
-        logging.info(batches2string(train_batches.next(), index_vocab_dict))
-        logging.info(batches2string(valid_batches.next(), index_vocab_dict))
+        logging.info(batches2string(next(train_batches), index_vocab_dict))
+        logging.info(batches2string(next(valid_batches), index_vocab_dict))
         logging.info('Show vocabulary')
         logging.info(vocab_index_dict)
         logging.info(index_vocab_dict)
@@ -359,7 +359,7 @@ def load_vocab(vocab_file, encoding):
         vocab_index_dict = json.load(f)
     index_vocab_dict = {}
     vocab_size = 0
-    for char, index in vocab_index_dict.items():
+    for char, index in list(vocab_index_dict.items()):
         index_vocab_dict[index] = char
         vocab_size += 1
     return vocab_index_dict, index_vocab_dict, vocab_size

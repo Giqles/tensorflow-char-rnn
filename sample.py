@@ -83,8 +83,8 @@ def main():
             ppl = test_model.run_epoch(session, len(args.example_text),
                                         example_batches,
                                         is_training=False)[0]
-            print('Example text is: %s' % args.example_text)
-            print('Perplexity is: %s' % ppl)
+            print(('Example text is: %s' % args.example_text))
+            print(('Perplexity is: %s' % ppl))
     else:
         if args.seed >= 0:
             np.random.seed(args.seed)
@@ -95,7 +95,7 @@ def main():
                                             vocab_index_dict, index_vocab_dict,
                                             temperature=args.temperature,
                                             max_prob=args.max_prob)
-            print('Sampled text is:\n%s' % sample)
+            print(('Sampled text is:\n%s' % sample))
         return sample
 
 if __name__ == '__main__':
