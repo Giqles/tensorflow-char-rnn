@@ -39,7 +39,7 @@ def main():
                         help='number of unrolling steps.')
     parser.add_argument('--model', type=str, default='lstm',
                         help='which model to use (rnn, lstm or gru).')
-    
+
     # Parameters to control the training.
     parser.add_argument('--num_epochs', type=int, default=50,
                         help='number of epochs')
@@ -70,7 +70,7 @@ def main():
                         help=('whether the experiment log is stored in a file under'
                               '  output_dir or printed at stdout.'))
     parser.set_defaults(log_to_file=False)
-    
+
     parser.add_argument('--progress_freq', type=int,
                         default=100,
                         help=('frequency for progress report in training'
@@ -91,7 +91,7 @@ def main():
     parser.add_argument('--best_valid_ppl', type=float,
                         default=np.Inf,
                         help=('current valid perplexity'))
-    
+
     # Parameters for using saved best models.
     parser.add_argument('--init_dir', type=str, default='',
                         help='continue from the outputs in the given directory')
@@ -106,7 +106,7 @@ def main():
                         help=('use the first 1000 character to as data'
                               ' to test the implementation'))
     parser.set_defaults(test=False)
-    
+
     args = parser.parse_args()
 
     # Specifying location to store model, best model and tensorboard log.
@@ -134,12 +134,12 @@ def main():
     # Set logging file.
     if args.log_file == 'stdout':
         logging.basicConfig(stream=sys.stdout,
-                            format='%(asctime)s %(levelname)s:%(message)s', 
+                            format='%(asctime)s %(levelname)s:%(message)s',
                             level=logging.INFO,
                             datefmt='%I:%M:%S')
     else:
         logging.basicConfig(filename=args.log_file,
-                            format='%(asctime)s %(levelname)s:%(message)s', 
+                            format='%(asctime)s %(levelname)s:%(message)s',
                             level=logging.INFO,
                             datefmt='%I:%M:%S')
 
@@ -147,7 +147,7 @@ def main():
     print('All final and intermediate outputs will be stored in %s/' % args.output_dir)
     print('All information will be logged to %s' % args.log_file)
     print('=' * 60 + '\n')
-    
+
     if args.debug:
         logging.info('args are:\n%s', args)
 
@@ -188,7 +188,7 @@ def main():
     logging.info('Number of characters: %s', len(text))
 
     if args.debug:
-        n = 10        
+        n = 10
         logging.info('First %d characters: %s', n, text[:n])
 
     logging.info('Creating train, valid, test split')
@@ -215,7 +215,7 @@ def main():
     # Create batch generators.
     batch_size = params['batch_size']
     num_unrollings = params['num_unrollings']
-    train_batches = BatchGenerator(train_text, batch_size, num_unrollings, vocab_size, 
+    train_batches = BatchGenerator(train_text, batch_size, num_unrollings, vocab_size,
                                    vocab_index_dict, index_vocab_dict)
     # valid_batches = BatchGenerator(valid_text, 1, 1, vocab_size,
     #                                vocab_index_dict, index_vocab_dict)
@@ -232,7 +232,7 @@ def main():
         logging.info('Show vocabulary')
         logging.info(vocab_index_dict)
         logging.info(index_vocab_dict)
-        
+
     # Create graphs
     logging.info('Creating graph')
     graph = tf.Graph()
@@ -299,7 +299,7 @@ def main():
                 valid_ppl, valid_summary_str, _ = valid_model.run_epoch(
                     session,
                     valid_size,
-                    valid_batches, 
+                    valid_batches,
                     is_training=False,
                     verbose=args.verbose,
                     freq=args.progress_freq)
@@ -359,7 +359,7 @@ def load_vocab(vocab_file, encoding):
         vocab_index_dict = json.load(f)
     index_vocab_dict = {}
     vocab_size = 0
-    for char, index in vocab_index_dict.iteritems():
+    for char, index in vocab_index_dict.items():
         index_vocab_dict[index] = char
         vocab_size += 1
     return vocab_index_dict, index_vocab_dict, vocab_size
@@ -368,6 +368,6 @@ def load_vocab(vocab_file, encoding):
 def save_vocab(vocab_index_dict, vocab_file, encoding):
     with codecs.open(vocab_file, 'w', encoding=encoding) as f:
         json.dump(vocab_index_dict, f, indent=2, sort_keys=True)
-        
+
 if __name__ == '__main__':
     main()
