@@ -49,6 +49,8 @@ def main():
                         help='fraction of data used for training.')
     parser.add_argument('--valid_frac', type=float, default=0.05,
                         help='fraction of data used for validation.')
+    parser.add_argument('--early_stopping', type=int, default=5,
+                        help='number of epochs to tolerate without improvement')
     # test_frac is computed as (1 - train_frac - valid_frac).
     parser.add_argument('--dropout', type=float, default=0.0,
                         help='dropout rate, default to 0 (no dropout).')
@@ -275,6 +277,10 @@ def main():
                 saver.restore(session, args.init_model)
             else:
                 tf.initialize_all_variables().run()
+
+            # Set epochs_without_improvement counter
+            epochs_without_improvement = 0
+
             for i in range(args.num_epochs):
                 logging.info('=' * 19 + ' Epoch %d ' + '=' * 19 + '\n', i)
                 logging.info('Training on training set')
@@ -311,6 +317,10 @@ def main():
                         args.save_best_model,
                         global_step=train_model.global_step)
                     best_valid_ppl = valid_ppl
+                    epochs_without_improvement = 0
+                else:
+                    epochs_without_improvement += 1
+
                 valid_writer.add_summary(valid_summary_str, global_step)
                 valid_writer.flush()
                 logging.info('Best model is saved in %s', best_model)
@@ -324,6 +334,12 @@ def main():
                     os.remove(result_path)
                 with open(result_path, 'w') as f:
                     json.dump(result, f, indent=2, sort_keys=True)
+
+                # Stop training if early_stopping exceeded
+                if epochs_without_improvement >= args.early_stopping:
+                    logging.info('Early stopping tolerance exceeded.')
+                    logging.info('Stopping training after epoch %d', i)
+                    break 
 
             logging.info('Latest model is saved in %s', saved_path)
             logging.info('Best model is saved in %s', best_model)
