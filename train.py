@@ -339,7 +339,8 @@ def main():
                 if epochs_without_improvement >= args.early_stopping:
                     logging.info('Early stopping tolerance exceeded.')
                     logging.info('Stopping training after epoch %d', i)
-                    break 
+                    logging.info('\n')
+                    break
 
             logging.info('Latest model is saved in %s', saved_path)
             logging.info('Best model is saved in %s', best_model)
