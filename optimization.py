@@ -13,8 +13,7 @@ def optim(params):
 
     args = ['--data_file=data/corpus_clean.txt',
             '--train_frac=0.9',
-            '--num_epochs=20',
-            '--early_stopping=3',
+            '--num_epochs=3',
             '--save_best_only',
             '--num_layers='     + str(int(params['num_layers'])),
             '--hidden_size='    + str(int(params['hidden_size'])),
@@ -61,7 +60,7 @@ if new:
 
 else:
     # Carry on from where we left off
-    bo.maximize(init_points=3, n_iter=15, kappa=3.29, verbose=True)
+    bo.maximize(init_points=0, n_iter=15, kappa=3.29, verbose=True)
 
 # Save wherever we got to:
 pkl.dump(bo, 'outputs/agenda-bot/res.pkl')
