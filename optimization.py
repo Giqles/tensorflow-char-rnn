@@ -38,7 +38,7 @@ if os.path.isfile('outputs/agenda-bot/res.pkl'):
 else:
     searchSpace = { 'num_layers': (2, 3),
                     'hidden_size': (128, 512),
-                    'num_unrollings:' (20, 80),
+                    'num_unrollings': (20, 80),
                     'dropout:' (0.0, 0.3),
                     'max_grad_norm': (1, 10),
                     'learning_rate': (0.0001, 0.01)}
