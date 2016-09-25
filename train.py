@@ -11,7 +11,7 @@ from char_rnn_model import *
 
 TF_VERSION = int(tf.__version__.split('.')[1])
 
-def main():
+def main(args):
     parser = argparse.ArgumentParser()
 
     # Data and vocabulary file
@@ -109,7 +109,7 @@ def main():
                               ' to test the implementation'))
     parser.set_defaults(test=False)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # Specifying location to store model, best model and tensorboard log.
     args.save_model = os.path.join(args.output_dir, 'save_model/model')
@@ -339,7 +339,7 @@ def main():
                 if epochs_without_improvement >= args.early_stopping:
                     logging.info('Early stopping tolerance exceeded.')
                     logging.info('Stopping training after epoch %d', i)
-                    break 
+                    break
 
             logging.info('Latest model is saved in %s', saved_path)
             logging.info('Best model is saved in %s', best_model)
@@ -386,4 +386,4 @@ def save_vocab(vocab_index_dict, vocab_file, encoding):
         json.dump(vocab_index_dict, f, indent=2, sort_keys=True)
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
