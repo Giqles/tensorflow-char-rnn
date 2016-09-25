@@ -1,5 +1,4 @@
 import argparse
-import codecs
 import json
 import os
 
@@ -7,9 +6,9 @@ import numpy as np
 from char_rnn_model import *
 from train import load_vocab
 
-def main():
+def main(args):
     parser = argparse.ArgumentParser()
-    
+
     # Parameters for using saved best models.
     parser.add_argument('--init_dir', type=str, default='',
                         help='continue from the outputs in the given directory')
@@ -20,12 +19,12 @@ def main():
                         help=('Temperature for sampling from softmax: '
                               'higher temperature, more random; '
                               'lower temperature, more greedy.'))
-    
+
     parser.add_argument('--max_prob', dest='max_prob', action='store_true',
                         help='always pick the most probable next character in sampling')
 
     parser.set_defaults(max_prob=False)
-    
+
     parser.add_argument('--start_text', type=str,
                         default='The meaning of life is ',
                         help='the text to start with')
@@ -51,8 +50,8 @@ def main():
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help='show debug information')
     parser.set_defaults(debug=False)
-    
-    args = parser.parse_args()
+
+    args = parser.parse_args(args)
 
     # Prepare parameters.
     with open(os.path.join(args.init_dir, 'result.json'), 'r') as f:
@@ -88,7 +87,7 @@ def main():
     else:
         if args.seed >= 0:
             np.random.seed(args.seed)
-        # Sampling a sequence 
+        # Sampling a sequence
         with tf.Session(graph=graph) as session:
             saver.restore(session, best_model)
             sample = test_model.sample_seq(session, args.length, args.start_text,
@@ -99,4 +98,4 @@ def main():
         return sample
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
