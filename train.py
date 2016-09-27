@@ -11,7 +11,7 @@ from char_rnn_model import *
 
 TF_VERSION = int(tf.__version__.split('.')[1])
 
-def main():
+def main(args):
     parser = argparse.ArgumentParser()
 
     # Data and vocabulary file
@@ -109,7 +109,7 @@ def main():
                               ' to test the implementation'))
     parser.set_defaults(test=False)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # Specifying location to store model, best model and tensorboard log.
     args.save_model = os.path.join(args.output_dir, 'save_model/model')
@@ -387,4 +387,4 @@ def save_vocab(vocab_index_dict, vocab_file, encoding):
         json.dump(vocab_index_dict, f, indent=2, sort_keys=True)
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
