@@ -24,6 +24,9 @@ def main(args):
         # Get the trial iteration
         nonlocal trial
         trial += 1
+        # Get the start_text and text length
+        nonlocal start_text
+        nonlocal text_length
 
         # Set the output directory, also where sample reads from
         odir = 'output/' + name + '/_trial_' + str(int(trial))
@@ -58,9 +61,9 @@ def main(args):
         # After training, make and store some sample text from the best model
         for temp in [0.3, 0.4, 0.7, 1.0]:
             smargs = ['--init_dir=' + odir,
-                      '--start_text=' + params['start_text'],
-                      '--temperature=' + temp
-                      '--length=' + str(int(params['length']))]
+                      '--start_text=' + start_text,
+                      '--temperature=' + temp,
+                      '--length=' + str(int(text_length))]
             sample_text = sample.main(smargs)
             logger.info('---' * 20)
             logger.info('Temperature: ' + str(temp))
@@ -83,6 +86,10 @@ def main(args):
                    'learning_rate': (0.0001, 0.01)}
 
     bo = BayesianOptimization(evaluate, searchSpace)
+
+    # Specify other arguments to pass to the optimization function
+    start_text='The meaning of life is'
+    text_length=1000
 
     # Load up previous optimization data if available
     if os.path.isfile(resfile):
