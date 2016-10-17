@@ -70,12 +70,17 @@ def optimizer(name):
 
             # Do some optimization, with init points
             bo.maximize(init_points=5, n_iter=20, kappa=3.29, verbose=True)
-            print(bo.Y)
         else:
-            # Add in the initialization
+            # Initialize with the earlier data
             bo.initialize(res)
+            # Add some init points if we don't have enough
+            if trial < 5:
+                inits = 5 - trial
+            else:
+                inits = 0
+
             # Do some optimization
-            bo.maximize(init_points=0, n_iter=9, kappa=3.29, verbose=True)
+            bo.maximize(init_points=inits, n_iter=20, kappa=3.29, verbose=True)
 
     finally:
         # Manipulate the trial data into the right format to feed back to the
