@@ -14,6 +14,10 @@ def main(args):
     parser.add_argument('--init_dir', type=str, default='',
                         help='continue from the outputs in the given directory')
 
+    # Parameters for controlling verbosity
+    parser.add_argument('--verbose', type=bool, default=True,
+                        help='whether to print statements')
+
     # Parameters for sampling.
     parser.add_argument('--temperature', type=float,
                         default=1.0,
@@ -83,8 +87,9 @@ def main(args):
             ppl = test_model.run_epoch(session, len(args.example_text),
                                         example_batches,
                                         is_training=False)[0]
-            print(('Example text is: %s' % args.example_text))
-            print(('Perplexity is: %s' % ppl))
+            if args.verbose:
+                print(('Example text is: %s' % args.example_text))
+                print(('Perplexity is: %s' % ppl))
     else:
         if args.seed >= 0:
             np.random.seed(args.seed)
@@ -95,7 +100,8 @@ def main(args):
                                             vocab_index_dict, index_vocab_dict,
                                             temperature=args.temperature,
                                             max_prob=args.max_prob)
-            print(('Sampled text is:\n%s' % sample))
+            if args.verbose:
+                print(('Sampled text is:\n%s' % sample))
         return sample
 
 if __name__ == '__main__':
