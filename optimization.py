@@ -1,20 +1,33 @@
 from bayes_opt import BayesianOptimization
+import argparse
 import pickle as pkl
 import train
 import json
+import logging
 import os
 
-def optimizer(name):
+def main(args):
+    parser = argparse.ArgumentParser()
 
-    resfile = 'output/' + name + '/res.pkl'
+    # Name
+    parser.add_argument('--name', type=str)
+
+    # Parse arguments
+    args = parser.parse_args(args)
+
+    resfile = 'output/' + args.name + '/res.pkl'
 
     # Some of this is taken from nadavbh12's fork of the original repo.
-    def optim(**params):
+    def evaluate(**params):
+        # Get the trial iteration
         nonlocal trial
         trial += 1
+
+        # Set the output directory, also where sample reads from
         odir = 'output/' + name + '/_trial_' + str(int(trial))
 
-        args = ['--data_file=data/corpus_clean.txt',
+        # Pass the arguments for the training routine
+        trargs = ['--data_file=data/corpus_clean.txt',
                 '--train_frac=0.9',
                 '--num_epochs=50',
                 '--early_stopping=5',
@@ -27,7 +40,32 @@ def optimizer(name):
                 '--learning_rate='  + str(float(params['learning_rate'])),
                 '--output_dir='     + odir]
 
-        train.main(args)
+        # And do some training
+        train.main(trargs)
+
+        # Grab the logger from the training routine.
+        log_name = '_trial_' + str(int(trial)) + '_experiment_log'
+        logger = logging.getLogger(log_name)
+        logger.setLevel(logging.INFO)
+
+        # Bit of heading
+        logger.info('===' * 20)
+        logger.info('Sample texts:')
+        logger.info('')
+
+        # After training, make and store some sample text from the best model
+        for temp in [0.3, 0.4, 0.7, 1.0]
+            smargs = ['--init_dir=' + odir,
+                      '--start_text=' + params['start_text'],
+                      '--temperature=' + temp
+                      '--length=' + str(int(params['length']))]
+            sample_text = sample.main(smargs)
+            logger.info('---' * 20)
+            logger.info('Temperature: ' + str(temp))
+            logger.info('---' * 20)
+            logger.info(sample_text)
+
+        # Load up the final optimization result to pass back to the optimizer
         with open(os.path.join(odir, 'result.json'), 'r') as f:
             result = json.load(f)
 
@@ -42,7 +80,7 @@ def optimizer(name):
                    'max_grad_norm': (1, 10),
                    'learning_rate': (0.0001, 0.01)}
 
-    bo = BayesianOptimization(optim, searchSpace)
+    bo = BayesianOptimization(evaluate, searchSpace)
 
     # Load up previous optimization data if available
     if os.path.isfile(resfile):
@@ -73,6 +111,7 @@ def optimizer(name):
         else:
             # Initialize with the earlier data
             bo.initialize(res)
+
             # Add some init points if we don't have enough
             if trial < 5:
                 inits = 5 - trial
@@ -92,7 +131,5 @@ def optimizer(name):
         with open(resfile, 'wb') as f:
             pkl.dump(allres, f)
 
-name = 'agenda-bot'
-
-# Run the optimization
-optimizer(name)
+if __name__ == '__main__':
+    main(sys.argv[1:])
