@@ -16,14 +16,15 @@ def optimizer(name):
 
         args = ['--data_file=data/corpus_clean.txt',
                 '--train_frac=0.9',
-                '--num_epochs=1',
+                '--num_epochs=50',
+                '--early_stopping=5',
+                '--log_to_file',
                 '--num_layers='     + str(int(params['num_layers'])),
                 '--hidden_size='    + str(int(params['hidden_size'])),
                 '--num_unrollings=' + str(int(params['num_unrollings'])),
                 '--dropout='        + str(float(params['dropout'])),
                 '--max_grad_norm='  + str(float(params['max_grad_norm'])),
                 '--learning_rate='  + str(float(params['learning_rate'])),
-                '--test',
                 '--output_dir='     + odir]
 
         train.main(args)
@@ -65,16 +66,16 @@ def optimizer(name):
                             'dropout': [0.1, 0.1, 0.2, 0.2],
                             'max_grad_norm': [5, 5, 5, 5],
                             'learning_rate': [0.001, 0.001, 0.001, 0.001]}
-            # bo.explore(exploreSpace)
+            bo.explore(exploreSpace)
 
             # Do some optimization, with init points
-            bo.maximize(init_points=5, n_iter=1, kappa=3.29, verbose=True)
+            bo.maximize(init_points=5, n_iter=20, kappa=3.29, verbose=True)
             print(bo.Y)
         else:
             # Add in the initialization
             bo.initialize(res)
             # Do some optimization
-            bo.maximize(init_points=0, n_iter=3, kappa=3.29, verbose=True)
+            bo.maximize(init_points=0, n_iter=9, kappa=3.29, verbose=True)
 
     finally:
         # Manipulate the trial data into the right format to feed back to the
@@ -82,7 +83,6 @@ def optimizer(name):
         allres = {}
         for i in range(len(bo.Y)):
             allres[bo.Y[i]] = dict(zip(bo.keys, bo.X[i]))
-            print(allres)
         # Save wherever we got to:
         with open(resfile, 'wb') as f:
             pkl.dump(allres, f)
