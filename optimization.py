@@ -11,6 +11,8 @@ def main(args):
 
     # Name
     parser.add_argument('--name', type=str)
+    # Corpus
+    parser.add_argument('--corpus', type=str)
 
     # Parse arguments
     args = parser.parse_args(args)
@@ -27,7 +29,7 @@ def main(args):
         odir = 'output/' + name + '/_trial_' + str(int(trial))
 
         # Pass the arguments for the training routine
-        trargs = ['--data_file=data/corpus_clean.txt',
+        trargs = ['--data_file='    + args.corpus,
                 '--train_frac=0.9',
                 '--num_epochs=50',
                 '--early_stopping=5',
