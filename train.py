@@ -128,22 +128,25 @@ def main(args):
             os.makedirs(os.path.dirname(paths))
 
     # Specify logging config.
+    log_name = os.path.basename(args.output_dir) + '_experiment_log'
+    log_fname = log_name + '.txt'
     if args.log_to_file:
-        args.log_file = os.path.join(args.output_dir, 'experiment_log.txt')
+        args.log_file = os.path.join(args.output_dir, log_fname)
     else:
         args.log_file = 'stdout'
 
     # Set logging file.
+    logger = logging.getLogger(log_name)
+    logger.setLevel(logging.INFO)
     if args.log_file == 'stdout':
-        logging.basicConfig(stream=sys.stdout,
-                            format='%(asctime)s %(levelname)s:%(message)s',
-                            level=logging.INFO,
-                            datefmt='%I:%M:%S')
+        handler = logging.StreamHandler(sys.stdout)
     else:
-        logging.basicConfig(filename=args.log_file,
-                            format='%(asctime)s %(levelname)s:%(message)s',
-                            level=logging.INFO,
-                            datefmt='%I:%M:%S')
+        handler = logging.FileHandler(args.log_file)
+    log_format = '%(asctime)s %(levelname)s:%(message)s'
+    date_format = '%I:%M:%S'
+    formatter = logging.Formatter(fmt=log_format, datefmt=date_format)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     print(('=' * 60))
     print(('All final and intermediate outputs will be stored in %s/' % args.output_dir))
@@ -178,22 +181,22 @@ def main(args):
                   'dropout': args.dropout,
                   'input_dropout': args.input_dropout}
         best_model = ''
-    logging.info('Parameters are:\n%s\n', json.dumps(params, sort_keys=True, indent=4))
+    logger.info('Parameters are:\n%s\n', json.dumps(params, sort_keys=True, indent=4))
 
     # Read and split data.
-    logging.info('Reading data from: %s', args.data_file)
+    logger.info('Reading data from: %s', args.data_file)
     with codecs.open(args.data_file, 'r', encoding=args.encoding) as f:
         text = f.read()
 
     if args.test:
         text = text[:1000]
-    logging.info('Number of characters: %s', len(text))
+    logger.info('Number of characters: %s', len(text))
 
     if args.debug:
         n = 10
-        logging.info('First %d characters: %s', n, text[:n])
+        logger.info('First %d characters: %s', n, text[:n])
 
-    logging.info('Creating train, valid, test split')
+    logger.info('Creating train, valid, test split')
     train_size = int(args.train_frac * len(text))
     valid_size = int(args.valid_frac * len(text))
     test_size = len(text) - train_size - valid_size
@@ -204,15 +207,15 @@ def main(args):
     if args.vocab_file:
         vocab_index_dict, index_vocab_dict, vocab_size = load_vocab(args.vocab_file, args.encoding)
     else:
-        logging.info('Creating vocabulary')
+        logger.info('Creating vocabulary')
         vocab_index_dict, index_vocab_dict, vocab_size = create_vocab(text)
         vocab_file = os.path.join(args.output_dir, 'vocab.json')
         save_vocab(vocab_index_dict, vocab_file, args.encoding)
-        logging.info('Vocabulary is saved in %s', vocab_file)
+        logger.info('Vocabulary is saved in %s', vocab_file)
         args.vocab_file = vocab_file
 
     params['vocab_size'] = vocab_size
-    logging.info('Vocab size: %d', vocab_size)
+    logger.info('Vocab size: %d', vocab_size)
 
     # Create batch generators.
     batch_size = params['batch_size']
@@ -228,15 +231,15 @@ def main(args):
                                   vocab_index_dict, index_vocab_dict)
 
     if args.debug:
-        logging.info('Test batch generators')
-        logging.info(batches2string(next(train_batches), index_vocab_dict))
-        logging.info(batches2string(next(valid_batches), index_vocab_dict))
-        logging.info('Show vocabulary')
-        logging.info(vocab_index_dict)
-        logging.info(index_vocab_dict)
+        logger.info('Test batch generators')
+        logger.info(batches2string(next(train_batches), index_vocab_dict))
+        logger.info(batches2string(next(valid_batches), index_vocab_dict))
+        logger.info('Show vocabulary')
+        logger.info(vocab_index_dict)
+        logger.info(index_vocab_dict)
 
     # Create graphs
-    logging.info('Creating graph')
+    logger.info('Creating graph')
     graph = tf.Graph()
     with graph.as_default():
         with tf.name_scope('training'):
@@ -249,8 +252,8 @@ def main(args):
             saver = tf.train.Saver(name='checkpoint_saver')
             best_model_saver = tf.train.Saver(name='best_model_saver')
 
-    logging.info('Model size (number of parameters): %s\n', train_model.model_size)
-    logging.info('Start training\n')
+    logger.info('Model size (number of parameters): %s\n', train_model.model_size)
+    logger.info('Start training\n')
 
     result = {}
     result['params'] = params
@@ -282,8 +285,8 @@ def main(args):
             epochs_without_improvement = 0
 
             for i in range(args.num_epochs):
-                logging.info('=' * 19 + ' Epoch %d ' + '=' * 19 + '\n', i)
-                logging.info('Training on training set')
+                logger.info('=' * 19 + ' Epoch %d ' + '=' * 19 + '\n', i)
+                logger.info('Training on training set')
                 # training step
                 ppl, train_summary_str, global_step = train_model.run_epoch(
                     session,
@@ -298,8 +301,8 @@ def main(args):
                 # save model
                 saved_path = saver.save(session, args.save_model,
                                                     global_step=train_model.global_step)
-                logging.info('Latest model saved in %s\n', saved_path)
-                logging.info('Evaluate on validation set')
+                logger.info('Latest model saved in %s\n', saved_path)
+                logger.info('Evaluate on validation set')
 
                 # valid_ppl, valid_summary_str, _ = valid_model.run_epoch(
                 valid_ppl, valid_summary_str, _ = valid_model.run_epoch(
@@ -323,8 +326,8 @@ def main(args):
 
                 valid_writer.add_summary(valid_summary_str, global_step)
                 valid_writer.flush()
-                logging.info('Best model is saved in %s', best_model)
-                logging.info('Best validation ppl is %f\n', best_valid_ppl)
+                logger.info('Best model is saved in %s', best_model)
+                logger.info('Best validation ppl is %f\n', best_valid_ppl)
                 result['latest_model'] = saved_path
                 result['best_model'] = best_model
                 # Convert to float because numpy.float is not json serializable.
@@ -337,20 +340,20 @@ def main(args):
 
                 # Stop training if early_stopping exceeded
                 if epochs_without_improvement >= args.early_stopping:
-                    logging.info('Early stopping tolerance exceeded.')
-                    logging.info('Stopping training after epoch %d', i)
-                    logging.info('\n')
+                    logger.info('Early stopping tolerance exceeded.')
+                    logger.info('Stopping training after epoch %d', i)
+                    logger.info('\n')
                     break
 
-            logging.info('Latest model is saved in %s', saved_path)
-            logging.info('Best model is saved in %s', best_model)
-            logging.info('Best validation ppl is %f\n', best_valid_ppl)
-            logging.info('Evaluate the best model on test set')
+            logger.info('Latest model is saved in %s', saved_path)
+            logger.info('Best model is saved in %s', best_model)
+            logger.info('Best validation ppl is %f\n', best_valid_ppl)
+            logger.info('Evaluate the best model on test set')
             saver.restore(session, best_model)
             test_ppl, _, _ = test_model.run_epoch(session, test_size, test_batches,
-                                                   is_training=False,
-                                                   verbose=args.verbose,
-                                                   freq=args.progress_freq)
+                                                  is_training=False,
+                                                  verbose=args.verbose,
+                                                  freq=args.progress_freq)
             result['test_ppl'] = float(test_ppl)
     finally:
         result_path = os.path.join(args.output_dir, 'result.json')
