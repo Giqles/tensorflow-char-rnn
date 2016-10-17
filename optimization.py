@@ -56,7 +56,7 @@ def main(args):
         logger.info('')
 
         # After training, make and store some sample text from the best model
-        for temp in [0.3, 0.4, 0.7, 1.0]
+        for temp in [0.3, 0.4, 0.7, 1.0]:
             smargs = ['--init_dir=' + odir,
                       '--start_text=' + params['start_text'],
                       '--temperature=' + temp
