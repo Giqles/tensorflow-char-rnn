@@ -34,17 +34,17 @@ def main(args):
 
         # Pass the arguments for the training routine
         trargs = ['--data_file='    + args.corpus,
-                '--train_frac=0.9',
-                '--num_epochs=50',
-                '--early_stopping=5',
-                '--log_to_file',
-                '--num_layers='     + str(int(params['num_layers'])),
-                '--hidden_size='    + str(int(params['hidden_size'])),
-                '--num_unrollings=' + str(int(params['num_unrollings'])),
-                '--dropout='        + str(float(params['dropout'])),
-                '--max_grad_norm='  + str(float(params['max_grad_norm'])),
-                '--learning_rate='  + str(float(params['learning_rate'])),
-                '--output_dir='     + odir]
+                  '--train_frac=0.9',
+                  '--num_epochs=50',
+                  '--early_stopping=5',
+                  '--log_to_file',
+                  '--num_layers='     + str(int(params['num_layers'])),
+                  '--hidden_size='    + str(int(params['hidden_size'])),
+                  '--num_unrollings=' + str(int(params['num_unrollings'])),
+                  '--dropout='        + str(float(params['dropout'])),
+                  '--max_grad_norm='  + str(float(params['max_grad_norm'])),
+                  '--learning_rate='  + str(float(params['learning_rate'])),
+                  '--output_dir='     + odir]
 
         # And do some training
         train.main(trargs)
