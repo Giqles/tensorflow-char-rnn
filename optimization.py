@@ -30,7 +30,7 @@ def main(args):
         nonlocal text_length
 
         # Set the output directory, also where sample reads from
-        odir = 'output/' + name + '/_trial_' + str(int(trial))
+        odir = 'output/' + args.name + '/_trial_' + str(int(trial))
 
         # Pass the arguments for the training routine
         trargs = ['--data_file='    + args.corpus,
@@ -117,7 +117,7 @@ def main(args):
             bo.explore(exploreSpace)
 
             # Do some optimization, with init points
-            bo.maximize(init_points=5, n_iter=20, kappa=3.29, verbose=True)
+            bo.maximize(init_points=5, n_iter=20, kappa=3.29)
         else:
             # Initialize with the earlier data
             bo.initialize(res)
@@ -129,7 +129,7 @@ def main(args):
                 inits = 0
 
             # Do some optimization
-            bo.maximize(init_points=inits, n_iter=20, kappa=3.29, verbose=True)
+            bo.maximize(init_points=inits, n_iter=20, kappa=3.29)
 
     finally:
         # Manipulate the trial data into the right format to feed back to the
