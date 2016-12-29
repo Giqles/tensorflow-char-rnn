@@ -2,6 +2,7 @@ from bayes_opt import BayesianOptimization
 import argparse
 import pickle as pkl
 import train
+import sample
 import json
 import logging
 import os
