@@ -64,7 +64,7 @@ def main(args):
         for temp in [0.3, 0.4, 0.7, 1.0]:
             smargs = ['--init_dir=' + odir,
                       '--start_text=' + start_text,
-                      '--temperature=' + temp,
+                      '--temperature=' + str(temp),
                       '--length=' + str(int(text_length))]
             sample_text = sample.main(smargs)
             logger.info('---' * 20)
